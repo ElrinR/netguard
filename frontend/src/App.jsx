@@ -61,7 +61,7 @@ function App() {
   useEffect(() => {
     const fetchInitialSettings = async () => {
       try {
-        const response = await fetch('http://localhost:8000/settings');
+        const response = await fetch('/api/settings');
         if (response.ok) {
           const settingsData = await response.json();
           setSettings(settingsData);
@@ -77,8 +77,8 @@ function App() {
     const fetchData = async () => {
       try {
         const [alertsRes, statsRes] = await Promise.all([
-          fetch('http://localhost:8000/alerts'),
-          fetch('http://localhost:8000/stats')
+          fetch('/api/alerts'),
+          fetch('/api/stats')
         ]);
 
         if (alertsRes.ok) {
@@ -131,7 +131,7 @@ function App() {
     setIsSaving(true);
     setSaveMessage('');
     try {
-      const response = await fetch('http://localhost:8000/settings', {
+      const response = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
