@@ -59957,3 +59957,5 @@
 [2026-03-03 12:33:04] ALERT: SYN flood suspected from 10.199.136.4 (Burst: 131 pkts/min, Mode: Low)
 [2026-03-03 12:34:04] ALERT: SYN flood suspected from 10.199.136.4 (Burst: 131 pkts/min, Mode: Low)
 [2026-03-03 12:36:00] ALERT: SYN flood suspected from 10.199.136.4 (Burst: 131 pkts/min, Mode: Low)
+[2026-03-12 20:28:22] ALERT: SYN flood suspected from 10.206.71.4 (Burst: 131 pkts/min, Mode: Low)
+[2026-03-12 20:28:35] ALERT: SYN flood suspected from 10.206.71.192 (Burst: 131 pkts/min, Mode: Low)
