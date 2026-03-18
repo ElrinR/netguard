@@ -49,7 +49,9 @@ function App() {
   // Settings State
   const [settings, setSettings] = useState({
     syn_threshold: 20,
-    sensitivity: "Standard"
+    sensitivity: "Standard",
+    syn_enabled: true,
+    arp_enabled: true
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -64,7 +66,7 @@ function App() {
         const response = await fetch('/api/settings');
         if (response.ok) {
           const settingsData = await response.json();
-          setSettings(settingsData);
+          setSettings(prev => ({ ...prev, ...settingsData }));
         }
       } catch (error) {
         console.error("Error fetching initial settings:", error);
@@ -221,7 +223,7 @@ function App() {
                 </thead>
                 <tbody>
                   {filteredAlerts.length > 0 ? (
-                    filteredAlerts.slice(0, 10).map((alert, index) => {
+                    [...filteredAlerts].reverse().slice(0, 10).map((alert, index) => {
                       const isArp = alert.includes('ARP');
                       const parts = alert.split('] ALERT: ');
                       const time = parts[0]?.replace('[', '') || 'Live';
@@ -236,10 +238,17 @@ function App() {
                           <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{msg}</td>
                           <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{time}</td>
                           <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-success)', fontSize: '0.75rem', fontWeight: 600 }}>
-                              <Shield size={12} />
-                              MITIGATED
-                            </div>
+                            {alert.includes('ACTION TAKEN') ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-success)', fontSize: '0.75rem', fontWeight: 600 }}>
+                                <Shield size={12} />
+                                BLOCKED
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-danger)', fontSize: '0.75rem', fontWeight: 600 }}>
+                                <AlertTriangle size={12} />
+                                DETECTED
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -281,17 +290,35 @@ function App() {
               <span>Active Security Enforcement</span>
             </div>
             <div className="stats-grid">
-              {[
-                { title: "SYN Flood Mitigation", status: "ENABLED", color: "var(--accent-danger)" },
-                { title: "ARP Spoof Prevention", status: "ENABLED", color: "var(--accent-danger)" },
-                { title: "Port 80 Monitoring", status: "WATCHING", color: "var(--accent-success)" },
-                { title: "DDoS Shield", status: "ACTIVE", color: "var(--accent-primary)" }
-              ].map((rule, i) => (
-                <div key={i} className="stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{rule.title}</span>
-                  <span className="badge" style={{ background: 'rgba(255,255,255,0.03)', color: rule.color, border: `1px solid ${rule.color}22` }}>{rule.status}</span>
-                </div>
-              ))}
+              <div className="stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>SYN Flood Mitigation</span>
+                <button
+                  onClick={() => setSettings({ ...settings, syn_enabled: !settings.syn_enabled })}
+                  style={{ background: settings.syn_enabled ? 'rgba(0, 255, 157, 0.1)' : 'rgba(255, 255, 255, 0.05)', color: settings.syn_enabled ? 'var(--accent-success)' : 'var(--text-secondary)', border: `1px solid ${settings.syn_enabled ? 'var(--accent-success)' : 'var(--glass-border)'}`, padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  {settings.syn_enabled ? 'ENABLED' : 'DISABLED'}
+                </button>
+              </div>
+              <div className="stat-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>ARP Spoof Prevention</span>
+                <button
+                  onClick={() => setSettings({ ...settings, arp_enabled: !settings.arp_enabled })}
+                  style={{ background: settings.arp_enabled ? 'rgba(0, 255, 157, 0.1)' : 'rgba(255, 255, 255, 0.05)', color: settings.arp_enabled ? 'var(--accent-success)' : 'var(--text-secondary)', border: `1px solid ${settings.arp_enabled ? 'var(--accent-success)' : 'var(--glass-border)'}`, padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  {settings.arp_enabled ? 'ENABLED' : 'DISABLED'}
+                </button>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '1rem', paddingBottom: '2rem' }}>
+              <button onClick={handleSaveSettings} disabled={isSaving} className="login-button" style={{ maxWidth: '250px', marginTop: '0' }}>
+                {isSaving ? 'Syncing...' : 'Deploy Firewall Rules'}
+              </button>
+              {saveMessage && (
+                <span style={{ marginLeft: '1.5rem', color: 'var(--accent-primary)', fontSize: '0.85rem' }}>
+                  {saveMessage}
+                </span>
+              )}
             </div>
           </div>
         );

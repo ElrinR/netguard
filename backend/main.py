@@ -23,7 +23,9 @@ CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
 # Default config
 current_config = {
     "syn_threshold": 20,
-    "sensitivity": "Standard"
+    "sensitivity": "Standard",
+    "syn_enabled": True,
+    "arp_enabled": True
 }
 
 def load_config():
@@ -31,7 +33,8 @@ def load_config():
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r") as f:
-                current_config = json.load(f)
+                loaded = json.load(f)
+                current_config.update(loaded)
         except Exception:
             pass
     return current_config
@@ -57,13 +60,13 @@ async def get_alerts(limit: int = 200):
     if not os.path.exists(LOG_FILE):
         return []
     
+    # Efficiently load only the last 'limit' lines from the log file
+    import collections
     with open(LOG_FILE, "r") as f:
-        lines = f.readlines()
+        last_lines = collections.deque(f, limit)
         
-    # Return last 'limit' alerts
-    alerts = []
-    for line in lines[-limit:]:
-        alerts.append(line.strip())
+    # Return last 'limit' alerts properly stripped
+    alerts = [line.strip() for line in last_lines]
         
     return alerts
 

@@ -2,6 +2,7 @@ from scapy.layers.inet import TCP, IP
 from scapy.layers.l2 import ARP
 from logger import log_event
 import time
+import subprocess
 
 syn_counter = {}
 last_reset = time.time()
@@ -34,7 +35,7 @@ def analyze_packet(packet, config=None):
             traffic_stats["incoming"] += 1
     # -------- SYN Flood Detection --------
     try:
-        if packet.haslayer(TCP) and packet.haslayer(IP):
+        if config.get("syn_enabled", True) and packet.haslayer(TCP) and packet.haslayer(IP):
             # Check for the SYN flag (0x02 bit)
             flags = packet[TCP].flags
             if (isinstance(flags, str) and "S" in flags) or (not isinstance(flags, str) and flags & 0x02):
@@ -55,17 +56,31 @@ def analyze_packet(packet, config=None):
                 if syn_counter[src] > effective_threshold:
                     # Log only the first time it crosses the threshold in this minute
                     if syn_counter[src] == int(effective_threshold) + 1:
+                        # Attempt to auto-block the IP using Windows Firewall
+                        try:
+                            command = f'netsh advfirewall firewall add rule name="NetGuard Block {src}" dir=in action=block remoteip={src}'
+                            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                            
+                            if result.returncode == 0:
+                                log_event(f"ACTION TAKEN: Blocked IP {src} in Windows Firewall.")
+                            else:
+                                pass # Silently fail the mitigation if not admin, but still log the alert below
+                        except Exception:
+                            pass
+                            
                         log_event(f"SYN flood suspected from {src} (Burst: {syn_counter[src]} pkts/min, Mode: {sensitivity})")
     except Exception:
         pass 
 
     # -------- ARP Spoofing Detection --------
-    if packet.haslayer(ARP):
+    if config.get("arp_enabled", True) and packet.haslayer(ARP):
         ip = packet[ARP].psrc
         mac = packet[ARP].hwsrc
 
-        if ip in arp_table and arp_table[ip] != mac:
-            log_event(f"ARP Spoofing detected for IP {ip}")
-        else:
-            arp_table[ip] = mac
+        # Ignore DHCP/Network probes and broadcast MAC addresses
+        if ip != "0.0.0.0" and mac.lower() != "ff:ff:ff:ff:ff:ff":
+            if ip in arp_table and arp_table[ip] != mac:
+                log_event(f"ARP Spoofing detected for IP {ip} (MAC changed to {mac})")
+            else:
+                arp_table[ip] = mac
 

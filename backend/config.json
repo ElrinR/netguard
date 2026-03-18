@@ -1,4 +1,6 @@
 {
-    "syn_threshold": 65,
-    "sensitivity": "Low"
+    "syn_threshold": 50,
+    "sensitivity": "Standard",
+    "syn_enabled": true,
+    "arp_enabled": true
 }
